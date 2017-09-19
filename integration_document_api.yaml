@@ -1,0 +1,99 @@
+---
+  "$integration": "http://ibm.com/appconnect/integration/v2/integrationFile"
+  integration:
+    type: "api"
+    trigger-interfaces:
+      trigger-interface-1:
+        triggers:
+          createFFF:
+            assembly:
+              "$ref": "#/integration/assemblies/assembly-1"
+            input-context:
+              data: "myAPI"
+            output-context:
+              data: "myAPI"
+        options:
+          resources:
+          - business-object: "myAPI"
+            model:
+              "$ref": "#/models/myAPI"
+            triggers:
+              create: "createFFF"
+    action-interfaces:
+      action-interface-1:
+        type: "api-action"
+        business-object: "flatObject"
+        connector-type: "mock"
+        actions:
+          CREATE: {}
+    assemblies:
+      assembly-1:
+        assembly:
+          execute:
+          - if:
+              name: if_1
+              input:
+              - variable: Request
+                "$ref": "#/trigger/payload"
+              branch:
+              - condition:
+                  "{{$Request.Phone}}": "711599"
+                execute: []
+                completion-action:
+                  terminate:
+                    error:
+                      input:
+                      - variable: Request
+                        "$ref": "#/trigger/payload"
+                      message: "Do not like phone number: {{$Request.Phone}}"
+                      status-code: 400
+          - create-action:
+              name: "MockConnector Object"
+              target:
+                "$ref": "#/integration/action-interfaces/action-interface-1"
+              map:
+                "$map": "http://ibm.com/appconnect/map/v1"
+                mappings:
+                - Name:
+                    template: "{{$Request.Name}}"
+                - Phone:
+                    template: "{{$Request.Phone}}"
+                input:
+                - variable: Request
+                  "$ref": "#/trigger/payload"
+          - response:
+              name: "response-1"
+              reply-maps:
+              - title: "myAPI successfully created"
+                status-code: 201
+                map:
+                  "$map": "http://ibm.com/appconnect/map/v1"
+                  mappings:
+                  - Name:
+                      template: "{{$Request.Name}}"
+                  - State:
+                      template: "{{$Request.State}}"
+                  - Phone:
+                      template: "{{$Request.Phone}}"
+                  input:
+                  - variable: Request
+                    "$ref": "#/trigger/payload"
+                  - variable: MockConnectorObject
+                    "$ref": "#/node-output/MockConnector Object/response/payload"
+    name: "Untitled API 10"
+  models:
+    myAPI:
+      name: "myAPI"
+      properties:
+        Name:
+          type: String
+          id: true
+        State:
+          type: String
+          required: true
+        Phone:
+          type: String
+      plural: " "
+      description: " "
+      operations:
+        create: "#/integration/assemblies/assembly-1"
