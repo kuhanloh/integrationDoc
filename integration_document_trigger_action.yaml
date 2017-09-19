@@ -1,0 +1,36 @@
+$integration: 'http://ibm.com/appconnect/integration/v2/integrationFile'
+integration:
+  name: Marketo to MockConnector test flow
+  type: trigger-action
+  trigger-interfaces:
+    source:
+      type: event-trigger
+      connector-type: marketo
+      triggers:
+        interactionSource:
+          input-context:
+            data: Leads
+          assembly:
+            $ref: '#/integration/assemblies/inboundAssembly'
+          options:
+            webhookURLSuffix: testMarketoWebhookSuffix
+  action-interfaces:
+    target:
+      type: api-action
+      connector-type: mock
+      business-object: flatObject
+      actions:
+        CREATE: {}
+  assemblies:
+    inboundAssembly:
+      assembly:
+        execute:
+          - create-action:
+              name: call connector
+              map:
+                mappings:
+                  - objectId:
+                      expression: field1
+              target:
+                $ref: '#/integration/action-interfaces/target'
+models: {}
